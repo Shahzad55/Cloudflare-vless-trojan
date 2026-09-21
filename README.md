@@ -1,141 +1,140 @@
+# روش ساخت 1: اسکریپت پروکسی Cloudflare-workers/pages V2026.9
 
-# 搭建方式1：Cloudflare-workers/pages代理脚本 V2026.9
-
-### 1、本项目仅支持本地化部署
-### 2、本项目配置都为本地化编辑，不使用订阅器、订阅转换等第三方外链引用
-### 3、无需担心节点订阅信息被订阅器作者或者订阅转换作者后台查看
+### 1. این پروژه فقط از استقرار محلی پشتیبانی می‌کند
+### 2. تمام تنظیمات این پروژه به‌صورت محلی ویرایش می‌شوند و از لینک‌های خارجی شخص ثالث مانند اشتراک‌ساز و تبدیل‌کننده اشتراک استفاده نمی‌شود
+### 3. نیازی نیست نگران باشید که اطلاعات اشتراک Nodeها توسط سازنده اشتراک‌ساز یا سازنده تبدیل‌کننده اشتراک در Backend مشاهده شود
 --------------------------------
-## 脚本特色：
-#### 1、懒人小白专用！默认节点都为CF官方IP，无需频繁更新订阅获取客户端优选IP
-#### 2、为减少新手小白额外的成本，本项目不推荐使用自定义域名，如果你一定要用自定义域名，也可以
-#### 3、当在CF点击部署按钮后，可直接手搓节点或者使用分享链接，最多设置一个uuid/密码，其他不用改
-#### 4、Workers方式（仅支持自定义域）：支持vless+ws+tls、trojan+ws+tls、vless+ws、trojan+ws代理节点
-#### 5、Pages方式：支持vless+ws+tls、trojan+ws+tls代理节点
-#### 6、支持单节点链接、聚合通用节点链接、聚合通用节点订阅、sing-box节点订阅、clash节点订阅
+## ویژگی‌های اسکریپت:
+#### 1. مخصوص کاربران مبتدی و راه‌اندازی آسان! Nodeهای پیش‌فرض همگی IPهای رسمی CF هستند و نیازی به به‌روزرسانی مداوم اشتراک برای دریافت IPهای بهینه Client نیست
+#### 2. برای کاهش هزینه‌های اضافی کاربران مبتدی، استفاده از Custom Domain در این پروژه توصیه نمی‌شود؛ اگر حتماً می‌خواهید از Custom Domain استفاده کنید، امکان آن وجود دارد
+#### 3. پس از کلیک روی دکمه Deploy در CF، می‌توانید Nodeها را مستقیماً به‌صورت دستی بسازید یا از Share Link استفاده کنید؛ حداکثر فقط یک uuid/Password لازم است و سایر موارد نیازی به تغییر ندارند
+#### 4. روش Workers (فقط Custom Domain را پشتیبانی می‌کند): از Nodeهای پروکسی vless+ws+tls، trojan+ws+tls، vless+ws و trojan+ws پشتیبانی می‌کند
+#### 5. روش Pages: از Nodeهای پروکسی vless+ws+tls و trojan+ws+tls پشتیبانی می‌کند
+#### 6. از Single Node Link، Aggregated General Node Link، Aggregated General Node Subscription، sing-box Node Subscription و clash Node Subscription پشتیبانی می‌کند
 -------------------------------------------------------------
 
-### 交流平台：[甬哥博客地址](https://ygkkk.blogspot.com)、[甬哥YouTube频道](https://www.youtube.com/@ygkkk)、[甬哥TG电报群组](https://t.me/+jZHc6-A-1QQ5ZGVl)、[甬哥TG电报频道](https://t.me/+DkC9ZZUgEFQzMTZl)
+### پلتفرم‌های ارتباطی: [甬哥 Blog](https://ygkkk.blogspot.com)، [甬哥 YouTube Channel](https://www.youtube.com/@ygkkk)، [甬哥 TG Group](https://t.me/+jZHc6-A-1QQ5ZGVl)، [甬哥 TG Channel](https://t.me/+DkC9ZZUgEFQzMTZl)
 
 --------------------------------
 
-## 一：CF Vless节点可设置的变量内容 
+## 1: متغیرهای قابل تنظیم برای CF Vless Node
 
-| 变量作用 | 变量名称| 变量值要求| 变量默认值| 变量要求|
+| کاربرد متغیر | نام متغیر | الزامات مقدار متغیر | مقدار پیش‌فرض متغیر | الزام |
 | :--- | :--- | :--- | :--- | :--- |
-| 1、必要的uuid | uuid (小写字母) |符合uuid规定格式 |万人骑uuid：86c50e3a-5b87-49dd-bd20-03c7f2735e40|建议|
-| 2、全局节点能上CF类网站 | proxyip (小写字母) |443端口：ipv4地址、[ipv6地址]、域名。非443端口：IPV4地址:端口、[IPV6地址]:端口、域名:端口|proxyip：脚本自带|可选|
-| 3、订阅节点：优选IP | ip1到ip13，共13个 |CF官方IP、CF反代IP、CF优选域名| ygkkk的CF官方域名|可选|
-| 4、订阅节点：优选IP对应端口 | pt1到pt13，共13个 |CF13个标准端口、反代IP对应任意端口| CF13个标准端口|可选|
+| 1. uuid ضروری | uuid (حروف کوچک) | مطابق فرمت استاندارد uuid | uuid 万人骑: 86c50e3a-5b87-49dd-bd20-03c7f2735e40 | پیشنهادی |
+| 2. دسترسی Nodeهای سراسری به سایت‌های CF | proxyip (حروف کوچک) | پورت 443: آدرس ipv4، [ipv6]، Domain. پورت غیر443: IPV4:Port، [IPV6]:Port، Domain:Port | proxyip: داخلی اسکریپت | اختیاری |
+| 3. Node اشتراک: IP بهینه | ip1 تا ip13، در مجموع 13 مورد | CF Official IP، CF Reverse Proxy IP، CF Optimized Domain | CF Official Domain مربوط به ygkkk | اختیاری |
+| 4. Node اشتراک: پورت متناظر IP بهینه | pt1 تا pt13، در مجموع 13 مورد | 13 پورت استاندارد CF، یا هر پورت مربوط به Reverse Proxy IP | 13 پورت استاندارد CF | اختیاری |
 
 
-## 二：CF Trojan节点可设置的变量内容
+## 2: متغیرهای قابل تنظیم برای CF Trojan Node
 
-| 变量作用 | 变量名称| 变量值要求| 变量默认值| 变量要求|
+| کاربرد متغیر | نام متغیر | الزامات مقدار متغیر | مقدار پیش‌فرض متغیر | الزام |
 | :--- | :--- | :--- | :--- | :--- |
-| 1、必要的密码 | pswd (小写字母) |建议字母数字 |万人骑密码：trojan|建议|
-| 2、全局节点能上CF类网站 | proxyip (小写字母) |443端口：ipv4地址、[ipv6地址]、域名。非443端口：IPV4地址:端口、[IPV6地址]:端口、域名:端口|proxyip：脚本自带|可选|
-| 3、订阅节点：优选IP | ip1到ip13，共13个 |CF官方IP、CF反代IP、CF优选域名| ygkkk的CF官方域名|可选|
-| 4、订阅节点：优选IP对应端口 | pt1到pt13，共13个 |CF13个标准端口、反代IP对应任意端口| CF13个标准端口|可选|
+| 1. Password ضروری | pswd (حروف کوچک) | حروف و اعداد پیشنهاد می‌شود | Password 万人骑: trojan | پیشنهادی |
+| 2. دسترسی Nodeهای سراسری به سایت‌های CF | proxyip (حروف کوچک) | پورت 443: آدرس ipv4، [ipv6]، Domain. پورت غیر443: IPV4:Port، [IPV6]:Port، Domain:Port | proxyip: داخلی اسکریپت | اختیاری |
+| 3. Node اشتراک: IP بهینه | ip1 تا ip13، در مجموع 13 مورد | CF Official IP، CF Reverse Proxy IP، CF Optimized Domain | CF Official Domain مربوط به ygkkk | اختیاری |
+| 4. Node اشتراک: پورت متناظر IP بهینه | pt1 تا pt13، در مجموع 13 مورد | 13 پورت استاندارد CF، یا هر پورت مربوط به Reverse Proxy IP | 13 پورت استاندارد CF | اختیاری |
 
-#### 订阅节点中IP与端口的变量（3与4）特别注意 【新手小白可无视变量（3与4），使用默认即可】
+#### نکته بسیار مهم درباره متغیرهای IP و Port در Nodeهای اشتراک (3 و 4) 【کاربران مبتدی می‌توانند متغیرهای (3 و 4) را نادیده بگیرند و از مقادیر پیش‌فرض استفاده کنند】
 
-1、切记：当你非要用订阅类的客户端，且要改优选IP时，才需要设置ip1到ip13，pt1到pt13的变量
+1. توجه کنید: فقط زمانی که حتماً از Client مبتنی بر Subscription استفاده می‌کنید و می‌خواهید IP بهینه را تغییر دهید، باید متغیرهای ip1 تا ip13 و pt1 تا pt13 را تنظیم کنید
 
-2、ip1到ip7，pt1到pt7，在订阅分享链接中，仅支持80系端口关TLS节点
+2. ip1 تا ip7 و pt1 تا pt7 در Share Link اشتراک فقط از Nodeهای بدون TLS با پورت‌های سری 80 پشتیبانی می‌کنند
 
-3、ip8到ip13，pt8到pt13，在订阅分享链接中，仅支持443系端口开TLS节点
+3. ip8 تا ip13 و pt8 تا pt13 در Share Link اشتراک فقط از Nodeهای دارای TLS با پورت‌های سری 443 پشتیبانی می‌کنند
 
-4、设置官方IP，无需设置端口（默认已设置13个CF标准端口）；设置反代IP需要分开关TLS，端口变量也必须设置
+4. برای تنظیم Official IP نیازی به تنظیم Port نیست (به‌صورت پیش‌فرض 13 پورت استاندارد CF تنظیم شده‌اند)؛ برای تنظیم Reverse Proxy IP باید Nodeهای دارای TLS و بدون TLS را جداگانه تنظیم کنید و متغیر Port نیز باید تنظیم شود
 
-5、订阅节点变量设置可参考此[视频教程](https://youtu.be/8s-ELRuFaeE?si=MjhcKbt20d2Q2eqp&t=447)
+5. برای تنظیم متغیرهای Node اشتراک می‌توانید به [Video Tutorial](https://youtu.be/8s-ELRuFaeE?si=MjhcKbt20d2Q2eqp&t=447) مراجعه کنید
 
 ---------------------------------
 
-## 三：自定义proxyip
+## 3: Custom proxyip
 
-虽说脚本默认自带其他大佬的proxyip，但同时也支持自定义proxyip
+اگرچه اسکریپت به‌صورت پیش‌فرض دارای proxyip متعلق به سایر توسعه‌دهندگان است، اما از Custom proxyip نیز پشتیبانی می‌کند
 
-支持IPV4、IPV6、域名三种方式（端口为443时，可不写:端口）
+سه روش IP V4، IP V6 و Domain پشتیبانی می‌شوند (وقتی Port برابر 443 است، می‌توان :Port را ننویسید)
 
-1、全局节点变量形式（上文一与二已说明）：
+1. حالت متغیر Global Node (در بخش‌های 1 و 2 بالا توضیح داده شده است):
 
-| proxyip端口 | IPv4形式| IPv6形式| 域名形式|
+| Port مربوط به proxyip | فرمت IPv4 | فرمت IPv6 | فرمت Domain |
 | :--- | :--- | :--- | :--- |
-| 443端口 | IPV4地址 |[IPV6地址] |域名|
-| 非443端口 | IPV4地址:端口 |[IPV6地址]:端口 |域名:端口|
+| Port 443 | IPV4 Address | [IPV6 Address] | Domain |
+| Port غیر443 | IPV4 Address:Port | [IPV6 Address]:Port | Domain:Port |
 
-2、单节点path路径形式：
+2. حالت مسیر path برای Single Node:
 
-| proxyip端口 | IPv4形式| IPv6形式| 域名形式|
+| Port مربوط به proxyip | فرمت IPv4 | فرمت IPv6 | فرمت Domain |
 | :--- | :--- | :--- | :--- |
-| 443端口 | /pyip=IPV4地址 |/pyip=[IPV6地址] |/pyip=域名|
-| 非443端口 | /pyip=IPV4地址:端口 |/pyip=[IPV6地址]:端口 |/pyip=域名:端口|
+| Port 443 | /pyip=IPV4 Address | /pyip=[IPV6 Address] | /pyip=Domain |
+| Port غیر443 | /pyip=IPV4 Address:Port | /pyip=[IPV6 Address]:Port | /pyip=Domain:Port |
 
-注意：
+توجه:
 
-1、单节点path路径变更proxyip：仅影响当前客户端正在设置的单节点，并不影响其他单节点或者订阅节点的proxyip
+1. تغییر proxyip از طریق path در Single Node فقط روی همان Single Node که Client فعلی در حال تنظیم آن است تأثیر می‌گذارد و روی سایر Single Nodeها یا Subscription Nodeها تأثیری ندارد
 
-2、全局节点变更proxyip：影响所有未设置path路径proxyip的节点
+2. تغییر Global proxyip روی تمام Nodeهایی که proxyip را از طریق path تنظیم نکرده‌اند تأثیر می‌گذارد
 
-3、当节点的path路径出现```/pyip=```关键字时，此节点的proxyip只认准path路径设置的proxyip，全局proxyip不起作用
+3. اگر path مربوط به Node شامل کلیدواژه `/pyip=` باشد، proxyip این Node فقط از proxyip تنظیم‌شده در path استفاده می‌کند و Global proxyip بی‌اثر خواهد بود
 
 ---------------------------------
 
-## 四：无需socks5！小白利用reality协议一键自制proxyip、80系/443系的任意端口反代IP
+## 4: بدون socks5! ساخت یک‌کلیکی proxyip و Reverse Proxy IP با هر Port سری 80/443 با استفاده از پروتکل reality برای کاربران مبتدی
 
-推荐使用 离中国近、便宜、流量多的纯IPV6的vps进行搭建。近可能避免使用IPV4，因为IPV4大概率被大佬们偷扫反代IP，成为他们的公益或收费反代IP库。如果非要用IPV4，请时常关注下自己VPS的流量，使用proxyip与客户端优选IP都会消耗VPS流量
+توصیه می‌شود برای ساخت، از VPSهای خالص IPV6 استفاده کنید که به چین نزدیک، ارزان و دارای ترافیک زیاد باشند. تا حد امکان از IPV4 استفاده نکنید، زیرا احتمال زیادی دارد IPهای Reverse Proxy توسط افراد دیگر به‌صورت خودکار اسکن شوند و وارد IP Libraryهای عمومی یا پولی Reverse Proxy آن‌ها شوند. اگر حتماً باید از IPV4 استفاده کنید، مرتباً ترافیک VPS خود را بررسی کنید؛ استفاده از proxyip و Client Optimized IP هر دو باعث مصرف ترافیک VPS می‌شوند
 
-搭建proxyip与反代ip的脚本推荐：[x-ui-yg脚本](https://github.com/yonggekkk/x-ui-yg)、[sing-box-yg脚本](https://github.com/yonggekkk/sing-box-yg)
+اسکریپت‌های پیشنهادی برای ساخت proxyip و Reverse Proxy IP: [x-ui-yg Script](https://github.com/yonggekkk/x-ui-yg)، [sing-box-yg Script](https://github.com/yonggekkk/sing-box-yg)
 
-相关操作请看[视频教程高阶1](https://youtu.be/QOnMVULADko)、[视频教程高阶2](https://youtu.be/CVZStM0t8BA)
+برای عملیات مربوطه به [Video Tutorial Advanced 1](https://youtu.be/QOnMVULADko) و [Video Tutorial Advanced 2](https://youtu.be/CVZStM0t8BA) مراجعه کنید
 
 -------------------------------------------
 
-## 五：查看配置信息与分享链接
+## 5: مشاهده اطلاعات Configuration و Share Link
 
-CF Vless：在网页地址栏输入 https:// pages域名 或者 自定义域名 /自定义uuid
+CF Vless: در نوار آدرس Browser وارد کنید: https:// Pages Domain یا Custom Domain /Custom UUID
 
-CF Trojan：在网页地址栏输入 https:// pages域名 或者 自定义域名 /自定义密码
+CF Trojan: در نوار آدرس Browser وارد کنید: https:// Pages Domain یا Custom Domain /Custom Password
 
-注意：
+توجه:
 
-1、pages域名 或者 自定义域名如果都被墙，必须开代理才能打开
+1. اگر Pages Domain یا Custom Domain هر دو Block شده باشند، برای باز کردن آن باید Proxy فعال باشد
 
-2、使用自定域时，pages域名下的配置信息与分享链接依旧可用
+2. هنگام استفاده از Custom Domain، اطلاعات Configuration و Share Link در Pages Domain همچنان قابل استفاده هستند
 
 ---------------------------------
 
-## 六：优选IP应用
+## 6: استفاده از Optimized IP
 
-CF官方优选80系端口：80、8080、8880、2052、2082、2086、2095
+CF Official Optimized 80-series Ports: 80، 8080، 8880، 2052، 2082، 2086، 2095
 
-CF官方优选443系端口：443、2053、2083、2087、2096、8443
+CF Official Optimized 443-series Ports: 443، 2053، 2083، 2087، 2096، 8443
 
-如果你没有天天最高速度或者选择国家的需求，使用默认的CF官方IP或者域名即可，不必更换
+اگر نیازی به بالاترین سرعت روزانه یا انتخاب Country ندارید، از IP یا Domain پیش‌فرض CF Official استفاده کنید و نیازی به تغییر آن نیست
 
-推荐好记的懒人专属CF官方IP如下，支持13个标准端口切换，称之为"冲在最前的不死IP"
+IPهای CF Official پیشنهادی و ساده برای کاربران مبتدی در ادامه آمده‌اند؛ از جابه‌جایی بین 13 پورت استاندارد پشتیبانی می‌کنند و به آن‌ها «IPهای همیشه پیشرو و زنده» گفته می‌شود
 
-104.16.0.0 
+104.16.0.0
 
-104.17.0.0 
+104.17.0.0
 
-104.18.0.0 
+104.18.0.0
 
-104.19.0.0 
+104.19.0.0
 
-104.20.0.0 
+104.20.0.0
 
-104.21.0.0 
+104.21.0.0
 
-104.22.0.0 
+104.22.0.0
 
-104.24.0.0 
+104.24.0.0
 
-104.25.0.0 
+104.25.0.0
 
-104.26.0.0 
+104.26.0.0
 
-104.27.0.0 
+104.27.0.0
 
 172.66.0.0
 
@@ -143,102 +142,102 @@ CF官方优选443系端口：443、2053、2083、2087、2096、8443
 
 162.159.0.0
 
-2606:4700::0 需IPV6环境
+2606:4700::0 نیازمند محیط IPV6
 
-CDN优选域名：yg1.ygkkk.dpdns.org (yg1中的1，可换为1-11中任意数字)
+CDN Optimized Domain: yg1.ygkkk.dpdns.org (عدد 1 در yg1 را می‌توان با هر عددی از 1 تا 11 جایگزین کرد)
 
 ---------------------------------
 
-## 七：客户端推荐
+## 7: Clientهای پیشنهادی
 
-#### 启用分片(Fragment)功能的好处：无视域名被墙TLS阻断，从而让workers等被墙的域名支持TLS节点。
+#### مزیت فعال‌سازی قابلیت Fragment: نادیده گرفتن TLS Blocking روی Domain و در نتیجه امکان استفاده از TLS Node برای Domainهای مسدودشده مانند workers.
 
-#### 提示：未被墙TLS阻断的自定义域名或pages域名无需开启分片就可使用TLS节点
+#### نکته: برای Custom Domain یا Pages Domain که TLS Blocking نشده‌اند، برای استفاده از TLS Node نیازی به فعال‌سازی Fragment نیست
  
-目前支持该功能的平台客户端如下（点击名称即跳转到官方下载地址）
+Clientهای زیر در حال حاضر از این قابلیت پشتیبانی می‌کنند (با کلیک روی نام، به Download Address رسمی هدایت می‌شوید)
 
-1、安卓Android：[v2rayNG](https://github.com/2dust/v2rayNG/tags)、[Nekobox](https://github.com/starifly/NekoBoxForAndroid/releases)、[Karing](https://github.com/KaringX/karing/tags)、clash/mihomo、sing-box各类客户端都可
+1. Android: [v2rayNG](https://github.com/2dust/v2rayNG/tags)، [Nekobox](https://github.com/starifly/NekoBoxForAndroid/releases)، [Karing](https://github.com/KaringX/karing/tags)، clash/mihomo و انواع Clientهای sing-box نیز قابل استفاده هستند
 
-2、电脑Windows：[v2rayN](https://github.com/2dust/v2rayN/tags)、[Hiddify](https://github.com/hiddify/hiddify-next/tags)、[Karing](https://github.com/KaringX/karing/tags)、clash/mihomo、sing-box各类客户端都可
+2. Windows: [v2rayN](https://github.com/2dust/v2rayN/tags)، [Hiddify](https://github.com/hiddify/hiddify-next/tags)، [Karing](https://github.com/KaringX/karing/tags)، clash/mihomo و انواع Clientهای sing-box نیز قابل استفاده هستند
 
-3、苹果Ios：Karing、Hiddify Proxy & VPN、Shadowrocket(小火箭)、Streisand
+3. iOS: Karing، Hiddify Proxy & VPN، Shadowrocket(小火箭)،Streisand
 
-4、软路由：passwall、ssr-plus、homeproxy
+4. Soft Router: passwall، ssr-plus، homeproxy
 
-注意：Shadowrocket(小火箭)、v2box、v2rayn、v2rayng客户端对trojan+ws有强制开启TLS问题，造成trojan+ws不通。且clash订阅没有trojan+ws节点。特此说明
+توجه: Clientهای Shadowrocket(小火箭)، v2box، v2rayn و v2rayng دارای مشکل اجباری بودن TLS برای trojan+ws هستند که باعث می‌شود trojan+ws کار نکند. همچنین Subscription مربوط به clash شامل Nodeهای trojan+ws نیست. این مورد برای اطلاع‌رسانی ذکر شده است
 
-关于客户端使用问题，请看[CF vless/trojan永久免费节点教程（六）：节点不能用，问题出在哪？多平台免费客户端设置指南及避坑说明](https://youtu.be/8E0l0nQWLxs)
-
----------------------------------
-
-### CF视频教程集合：
-
-2026.9.19最新：[CF免费节点新时代：无视1101报错，Workers+Pages精简部署方案，再次解读CF节点的奥秘](https://youtu.be/KWtqRFbi568)
-
-[🥇搭建代理9大问题排行榜：第4名全网99%的人被误导！第1名每个人都被折腾到爆！全程高能！](https://youtu.be/pJwJBqBkcfw)
-
-强烈推荐：[CF vless/trojan永久免费节点教程（四）：解读优选官方IP、优选反代IP、优选域名三者的关系与特点；ProxyIP存在的意义](https://youtu.be/NaLd-orwFUE)
-
-强烈推荐：[CF vless/trojan永久免费节点教程（六）：节点不能用，问题出在哪？多平台免费客户端设置指南及避坑说明](https://youtu.be/8E0l0nQWLxs)
-
-高阶推荐：[CF vless/trojan永久免费节点最终教程（七）：全网独家演示真正的"固定IP"，解决twitch、chatgpt客户端报错问题；一键自制反代IP与ProxyIP；揭秘你被他人偷扫IP的风险](https://youtu.be/QOnMVULADko)
-
-高阶推荐：[CF vless/trojan永久免费节点最终教程（八）：自建全端口通用的ProxyIP，同时支持客户端地址优选反代IP，自建反代IP的最终教程](https://youtu.be/CVZStM0t8BA)
-
-[直播精选回顾：CF workers vless免费节点四大特点，节点被断流阻断问题](https://youtu.be/9OHGpWlfdJ0)
+برای مشکلات مربوط به استفاده از Client، به [CF vless/trojan Free Node Tutorial (6): Node کار نمی‌کند، مشکل کجاست؟ راهنمای تنظیم Client رایگان در چند پلتفرم و نکات جلوگیری از خطا](https://youtu.be/8E0l0nQWLxs) مراجعه کنید
 
 ---------------------------------
 
+### مجموعه Video Tutorialهای CF:
 
-# 搭建方式2：Cloudflare-Socks5/Http本地代理脚本
-### 支持基于Workers域名、Pages域名、自定义域名
-### 可选 ECH-TLS、普通TLS、无TLS 三种代理模式，应对各种阻断封杀
+2026.9.19 آخرین نسخه: [CF Free Node در عصر جدید: نادیده گرفتن خطای 1101، روش ساده Deployment با Workers+Pages و توضیح دوباره اسرار CF Node](https://youtu.be/KWtqRFbi568)
 
-#### 以下脚本或Docker镜像：```ygkkk/cfsh```，建议在软路由等本地平台使用，脚本快捷方式：bash cfsh.sh
+[🥇رتبه‌بندی 9 مشکل اصلی ساخت Proxy: رتبه 4 باعث گمراهی 99٪ کاربران سراسر اینترنت شده! رتبه 1 همه را به دردسر انداخته! کاملاً پرمحتوا!](https://youtu.be/pJwJBqBkcfw)
+
+توصیه ویژه: [CF vless/trojan Free Node Tutorial (4): بررسی رابطه و ویژگی‌های Official IP بهینه، Reverse Proxy IP بهینه و Optimized Domain؛ مفهوم ProxyIP](https://youtu.be/NaLd-orwFUE)
+
+توصیه ویژه: [CF vless/trojan Free Node Tutorial (6): Node کار نمی‌کند، مشکل کجاست؟ راهنمای تنظیم Client رایگان در چند پلتفرم و نکات جلوگیری از خطا](https://youtu.be/8E0l0nQWLxs)
+
+توصیه پیشرفته: [CF vless/trojan Free Node Final Tutorial (7): نمایش اختصاصی «Fixed IP» واقعی، حل خطاهای Client در twitch و chatgpt؛ ساخت یک‌کلیکی Reverse Proxy IP و ProxyIP؛ بررسی خطر اسکن شدن IP شما توسط دیگران](https://youtu.be/QOnMVULADko)
+
+توصیه پیشرفته: [CF vless/trojan Free Node Final Tutorial (8): ساخت ProxyIP عمومی برای تمام Portها، پشتیبانی هم‌زمان از Reverse Proxy IP بهینه‌شده در Client و آموزش نهایی ساخت Reverse Proxy IP](https://youtu.be/CVZStM0t8BA)
+
+[مرور منتخب Live Stream: چهار ویژگی اصلی CF workers vless Free Node و مشکل قطع و مسدود شدن Node](https://youtu.be/9OHGpWlfdJ0)
+
+-----------------------------------
+
+
+# روش ساخت 2: اسکریپت Cloudflare-Socks5/Http Local Proxy
+### پشتیبانی از Workers Domain، Pages Domain و Custom Domain
+### دارای سه حالت اختیاری ECH-TLS، TLS معمولی و بدون TLS برای مقابله با انواع Blocking و Filtering
+
+#### اسکریپت یا Docker Image زیر: `ygkkk/cfsh`؛ استفاده از آن روی Soft Router و سایر پلتفرم‌های Local توصیه می‌شود. Shortcut اسکریپت: bash cfsh.sh
 
 ```
 curl -sSL https://raw.githubusercontent.com/yonggekkk/Cloudflare_vless_trojan/main/s5http_wkpgs/cfsh.sh -o cfsh.sh && chmod +x cfsh.sh && bash cfsh.sh
 ```
 
-| 变量作用 | 变量名称| 变量值要求| 变量默认值| 变量要求|
+| کاربرد متغیر | نام متغیر | الزامات مقدار متغیر | مقدار پیش‌فرض متغیر | الزام |
 | :--- | :--- | :--- | :--- | :--- |
-| 1、CF服务端域名:端口 | cf_domain | 域名:443系端口或者80系端口 | 无，必须CF处获取workers/pages/自定义的域名 | 必填 |
-| 2、CF服务端密钥 | token | 与服务端一样的字母数字 | 无密钥 | 可选 |
-| 3、客户端本地IP端口 | client_ip | 10000-65000之间 | 30000 | 可选 |
-| 4、指定优选IP/域名 | cf_cdnip | CF的优选IP或者优选域名 | yg(可任意1-13数字).ygkkk.dpdns.org，中国移动基本上是落地香港，电信联通基本上落地日本新加坡| 可选，也推荐使用```cloudflare-ech.com```这个优选域名，基本上落地美欧地区 |
-| 5、指定ProxyIP | pyip | ipv4或[ipv6]或域名 | 使用服务端ProxyIP | 可选 |
-| 6、DNS指定DoH | dns | DNS的DoH格式 | dns.alidns.com/dns-query | 可选 |
-| 7、ECH开关 | enable_ech | y=开启，n=关闭 | 开启ECH | 可选 |
-| 8、分流开关 | cnrule | y=国内外分流代理，n=全局代理 | 国内外分流代理 | 可选 |
+| 1. CF Server Domain:Port | cf_domain | Domain:443-series Port یا 80-series Port | بدون مقدار؛ باید از CF یک Domain مربوط به workers/pages/Custom دریافت شود | الزامی |
+| 2. CF Server Key | token | همان حروف و اعداد مورد استفاده در Server | بدون Key | اختیاری |
+| 3. Client Local IP:Port | client_ip | بین 10000 تا 65000 | 30000 | اختیاری |
+| 4. IP/Domain بهینه مشخص‌شده | cf_cdnip | CF Optimized IP یا Optimized Domain | yg(هر عددی از 1 تا 13).ygkkk.dpdns.org؛ برای China Mobile معمولاً به Hong Kong و برای Telecom/Unicom معمولاً به Japan/Singapore متصل می‌شود | اختیاری؛ همچنین استفاده از `cloudflare-ech.com` توصیه می‌شود که معمولاً به Europe/US متصل می‌شود |
+| 5. ProxyIP مشخص‌شده | pyip | ipv4 یا [ipv6] یا Domain | استفاده از Server ProxyIP | اختیاری |
+| 6. DNS مشخص‌شده DoH | dns | فرمت DoH مربوط به DNS | dns.alidns.com/dns-query | اختیاری |
+| 7. ECH Switch | enable_ech | y=فعال، n=غیرفعال | ECH فعال | اختیاری |
+| 8. Split Routing Switch | cnrule | y=Proxy داخلی/خارجی، n=Global Proxy | Proxy داخلی/خارجی | اختیاری |
 
-| 三模式变量设置要点 | ECH-TLS | 普通TLS| 无TLS|
+| نکات تنظیم متغیر در سه حالت | ECH-TLS | TLS معمولی | بدون TLS |
 | :--- | :--- | :--- | :--- |
-| 1、cf_domain（CF服务端域名:端口） | workers/pages/自定义的域名:443系端口 | pages/自定义的域名:443系端口 | workers域名:80系端口 | 
-| 2、enable_ech（ECH开关） | y开启 | n关闭 | y开启/n关闭 | 
+| 1. cf_domain (CF Server Domain:Port) | workers/pages/Custom Domain:443-series Port | pages/Custom Domain:443-series Port | workers Domain:80-series Port |
+| 2. enable_ech (ECH Switch) | y فعال | n غیرفعال | y فعال/n غیرفعال |
 
-注意：
+توجه:
 
-CF80系端口：80(推荐)、8080、8880、2052、2082、2086、2095
+CF 80-series Port: 80 (توصیه‌شده)، 8080، 8880، 2052، 2082، 2086، 2095
 
-CF443系端口：443(推荐)、2053、2083、2087、2096、8443
+CF 443-series Port: 443 (توصیه‌شده)، 2053، 2083، 2087، 2096، 8443
 
-推荐非CF网站IP查询（显示CF的104.28/2a09的IP）：https://www.whatismyip.com
+IP Lookup برای سایت‌های غیرCF (نمایش IPهای CF با 104.28/2a09): https://www.whatismyip.com
 
-推荐CF网站IP查询（显示proxyip的IP）：https://ip.sb
+IP Lookup برای سایت‌های CF (نمایش IP مربوط به proxyip): https://ip.sb
 
-ProxyIP是否有效影响着能否访问CF网站，比如CF官网、X推特、ChatGPT等网站
+معتبر بودن ProxyIP روی امکان دسترسی به سایت‌های CF مانند سایت رسمی CF، X Twitter و ChatGPT تأثیر دارد
 
-视频教程：[CF Socks5/Http免费代理教程：揭秘ECH Workers利弊；支持三种代理模式多端口复用，客户端自定义proxyip](https://youtu.be/Y_SHcD3prt8)
+Video Tutorial: [CF Socks5/Http Free Proxy Tutorial: بررسی مزایا و معایب ECH Workers؛ پشتیبانی از سه حالت Proxy و استفاده مجدد از چند Port، و Custom proxyip در Client](https://youtu.be/Y_SHcD3prt8)
 
 
 <img width="1182" height="517" alt="e5dfbfd7c9e6f15d4bd1c8409eecdffc" src="https://github.com/user-attachments/assets/ac0bcef0-54f9-4290-8c04-f84bbbe1cdf8" />
 
 -------------------------------------------------------------
 
-### 感谢支持！微信打赏甬哥侃侃侃ygkkk
+### سپاس از حمایت شما! WeChat Donation برای 甬哥侃侃侃ygkkk
 ![41440820a366deeb8109db5610313a1](https://github.com/user-attachments/assets/7dbaa3b1-cce4-415a-b46e-049531cf4d0d)
 
 -------------------------------------------------------------
 
-### 代码来源：[ca110us](https://github.com/ca110us/epeius)、[emn178](https://github.com/emn178/js-sha256/blob/master/src/sha256.js)、[3Kmfi6HP](https://github.com/3Kmfi6HP/EDtunnel)、[badafans](https://github.com/badafans/Cloudflare-IP-SpeedTest)、[XIU2](https://github.com/XIU2/CloudflareSpeedTest)
-### 声明：所有代码来源于Github社区，并通过ChatGPT进行整合
+### منبع کد: [ca110us](https://github.com/ca110us/epeius)، [emn178](https://github.com/emn178/js-sha256/blob/master/src/sha256.js)، [3Kmfi6HP](https://github.com/3Kmfi6HP/EDtunnel)، [badafans](https://github.com/badafans/Cloudflare-IP-SpeedTest)، [XIU2](https://github.com/XIU2/CloudflareSpeedTest)
+### بیانیه: تمام Codeها از جامعه Github دریافت شده و با استفاده از ChatGPT یکپارچه شده‌اند
