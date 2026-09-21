@@ -240,4 +240,4 @@ Video Tutorial: [CF Socks5/Http Free Proxy Tutorial: بررسی مزایا و م
 -------------------------------------------------------------
 
 ### منبع کد: [ca110us](https://github.com/ca110us/epeius)، [emn178](https://github.com/emn178/js-sha256/blob/master/src/sha256.js)، [3Kmfi6HP](https://github.com/3Kmfi6HP/EDtunnel)، [badafans](https://github.com/badafans/Cloudflare-IP-SpeedTest)، [XIU2](https://github.com/XIU2/CloudflareSpeedTest)
-### بیانیه: تمام Codeها از جامعه Github دریافت شده و با استفاده از ChatGPT یکپارچه شده‌اند
+ 
